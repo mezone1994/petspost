@@ -1,0 +1,24 @@
+# Dependencies (NEVER commit these)
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# Environment variables
+.env
+.env.local
+
+# AWS credentials
+.aws/
+aws-credentials.json
+
+# Uploads and logs
+uploads/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/

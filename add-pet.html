@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Pet - PetPost</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="main-header">
+        <div class="container">
+            <h1 class="logo">🐾 PetPost</h1>
+            <nav>
+                <a href="index.html" class="nav-btn">View Pets</a>
+                <a href="add-pet.html" class="nav-btn active">Add Pet</a>
+            </nav>
+        </div>
+    </header>
+    
+    <main class="container">
+        <div class="form-container">
+            <h2>Add New Pet for Adoption</h2>
+            <p class="form-description">Help this pet find a loving home by adding their information</p>
+            
+            <form id="pet-form" enctype="multipart/form-data">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="name">Pet Name *</label>
+                        <input type="text" id="name" name="name" 
+                               placeholder="e.g., Buddy" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="age">Age *</label>
+                        <input type="number" id="age" name="age" min="0" max="30"
+                               placeholder="Age in years" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="breed">Breed *</label>
+                    <input type="text" id="breed" name="breed" 
+                           placeholder="e.g., Golden Retriever, Persian Cat" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" rows="4" 
+                              placeholder="Tell us about this pet's personality, special needs, or any other important information..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="image">Pet Photo *</label>
+                    <input type="file" id="image" name="image" accept="image/*" required>
+                    <small>Please upload a clear photo of the pet (max 5MB)</small>
+                    <div id="image-preview"></div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="size">Size</label>
+                        <select id="size" name="size">
+                            <option value="">Select Size</option>
+                            <option value="Small">Small</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Large">Large</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="gender">Gender</label>
+                        <select id="gender" name="gender">
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button type="submit" class="submit-btn">Add Pet to Adoption List</button>
+            </form>
+        </div>
+    </main>
+    
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Animal Rescue - Helping pets find loving homes</p>
+        </div>
+    </footer>
+    
+    <script src="script.js"></script>
+</body>
+</html>

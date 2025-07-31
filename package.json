@@ -1,0 +1,16 @@
+{
+    "name": "marvelbase",
+    "version": "1.0.0",
+    "description": "Marvel Characters Database - My School Project",
+    "main": "server.js",
+    "scripts": {
+      "start": "node server.js"
+    },
+    "dependencies": {
+      "express": "5.1.0",
+      "multer": "2.0.2",
+      "aws-sdk": "2.1692.0",
+      "uuid": "9.0.0"
+    }
+  }
+  

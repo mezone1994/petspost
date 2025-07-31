@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PetPost - Adoptable Pets</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="main-header">
+        <div class="container">
+            <h1 class="logo">🐾 PetPost</h1>
+            <p class="tagline">Find Your Perfect Companion</p>
+            <nav>
+                <a href="index.html" class="nav-btn active">View Pets</a>
+                <a href="add-pet.html" class="nav-btn">Add Pet</a>
+            </nav>
+        </div>
+    </header>
+    
+    <main class="container">
+        <div class="search-section">
+            <input type="text" id="search-input" placeholder="Search pets by name or breed...">
+            <select id="breed-filter">
+                <option value="">All Breeds</option>
+                <option value="Dog">Dogs</option>
+                <option value="Cat">Cats</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+        
+        <div class="pets-section">
+            <h2>Available for Adoption</h2>
+            <div id="pets-grid" class="pets-grid">
+            </div>
+            <div id="loading" class="loading">Loading adoptable pets...</div>
+        </div>
+    </main>
+    
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 PetPost</p>
+        </div>
+    </footer>
+    
+    <script src="script.js"></script>
+</body>
+</html>
