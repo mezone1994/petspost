@@ -1,39 +1,55 @@
-// Global variables
 let allPets = [];
+let isModalOpen = false;
+let isMobile = window.innerWidth <= 768;
 
-// DOM elements
 const petsGrid = document.getElementById('pets-grid');
 const loadingElement = document.getElementById('loading');
 const petForm = document.getElementById('pet-form');
 const searchInput = document.getElementById('search-input');
 const breedFilter = document.getElementById('breed-filter');
 
-// Modal elements
 const modal = document.getElementById('image-modal');
+const modalContent = modal?.querySelector('.modal-content');
 const modalImage = document.getElementById('modal-image');
 const modalPetName = document.getElementById('modal-pet-name');
 const modalPetInfo = document.getElementById('modal-pet-info');
-const modalClose = document.querySelector('.modal-close');
+const modalCloseButtons = document.querySelectorAll('.modal-close, .modal-close-btn');
+const modalBackdrop = modal?.querySelector('.modal-backdrop');
 
-// Initialize app
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🐾 PetPost frontend with full image display starting...');
+    console.log('🐾 PetPost with full responsive support starting...');
     
-    // Load pets on main page
+    updateMobileStatus();
+    window.addEventListener('resize', debounce(updateMobileStatus, 250));
+    
     if (petsGrid) {
         loadPets();
         setupFilters();
         setupModal();
     }
     
-    // Setup form on add pet page
     if (petForm) {
         setupForm();
         setupImagePreview();
     }
+    
+    if ('ontouchstart' in window) {
+        document.body.classList.add('touch-device');
+    }
 });
 
-// Load and display pets
+function updateMobileStatus() {
+    const wasMobile = isMobile;
+    isMobile = window.innerWidth <= 768;
+    
+    if (wasMobile !== isMobile) {
+        console.log(`📱 Device type changed: ${isMobile ? 'Mobile' : 'Desktop'}`);
+        if (allPets.length > 0 && petsGrid) {
+            displayPets(allPets);
+        }
+    }
+}
+
 async function loadPets() {
     console.log('📖 Loading pets from server...');
     try {
@@ -58,7 +74,6 @@ async function loadPets() {
     }
 }
 
-// Display pets in grid with full images
 function displayPets(pets) {
     if (!petsGrid) return;
     
@@ -76,14 +91,16 @@ function displayPets(pets) {
     petsGrid.innerHTML = pets.map(pet => `
         <div class="pet-card" data-id="${pet.id}">
             <div class="pet-image-container">
-                <img src="${pet.imageUrl || 'https://via.placeholder.com/400x300?text=No+Photo+Available'}" 
+                <img src="${pet.imageUrl || 'https://via.placeholder.com/400x300/4ECDC4/FFFFFF?text=🐾+Photo+Not+Available'}" 
                      alt="${escapeHtml(pet.name)}" 
                      class="pet-image"
                      data-pet-id="${pet.id}"
                      loading="lazy"
                      onerror="handleImageError(this)"
                      onload="handleImageLoad(this)"
-                     title="Click to view ${escapeHtml(pet.name)}'s details">
+                     title="View ${escapeHtml(pet.name)}'s details"
+                     role="button"
+                     tabindex="0">
             </div>
             
             <div class="pet-info">
@@ -103,89 +120,183 @@ function displayPets(pets) {
         </div>
     `).join('');
     
-    // Add click handlers to images
     setupImageClickHandlers();
     
-    console.log(`📺 Displayed ${pets.length} pets with full image support`);
+    console.log(`📺 Displayed ${pets.length} pets with responsive layout`);
 }
 
-// Handle image loading success
 function handleImageLoad(img) {
     console.log(`✅ Image loaded successfully for pet: ${img.alt}`);
     img.style.opacity = '1';
+    img.classList.add('loaded');
 }
 
-// Handle image loading errors
 function handleImageError(img) {
     console.log(`❌ Image failed to load for pet: ${img.alt}`);
     img.src = 'https://via.placeholder.com/400x300/4ECDC4/FFFFFF?text=🐾+Photo+Not+Available';
     img.alt = 'Photo not available';
-    img.style.opacity = '0.7';
+    img.style.opacity = '0.8';
 }
 
-// Setup image click handlers for modal
 function setupImageClickHandlers() {
     const petImages = document.querySelectorAll('.pet-image');
+    
     petImages.forEach(img => {
-        img.addEventListener('click', function(e) {
-            e.preventDefault();
-            const petId = this.getAttribute('data-pet-id');
-            const pet = allPets.find(p => p.id === petId);
-            if (pet) {
-                openModal(pet);
-            }
-        });
+        img.removeEventListener('click', handleImageClick);
+        img.removeEventListener('keydown', handleImageKeydown);
+        img.removeEventListener('touchstart', handleTouchStart);
         
-        // Add keyboard support
-        img.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                this.click();
-            }
-        });
+        img.addEventListener('click', handleImageClick);
+        img.addEventListener('keydown', handleImageKeydown);
         
-        // Make images focusable
-        img.setAttribute('tabindex', '0');
+        if ('ontouchstart' in window) {
+            img.addEventListener('touchstart', handleTouchStart, { passive: true });
+        }
     });
 }
 
-// Setup modal functionality
+function handleImageClick(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const petId = this.getAttribute('data-pet-id');
+    const pet = allPets.find(p => p.id === petId);
+    
+    if (pet) {
+        openModal(pet);
+    }
+}
+
+function handleImageKeydown(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        this.click();
+    }
+}
+
+function handleTouchStart(e) {
+    this.style.transform = 'scale(0.98)';
+    setTimeout(() => {
+        this.style.transform = '';
+    }, 150);
+}
+
 function setupModal() {
     if (!modal) return;
     
-    // Close modal when clicking the X button
-    modalClose.addEventListener('click', closeModal);
+    modalCloseButtons.forEach(btn => {
+        btn.addEventListener('click', closeModal);
+    });
     
-    // Close modal when clicking outside the content
+    if (modalBackdrop) {
+        modalBackdrop.addEventListener('click', closeModal);
+    }
+    
     modal.addEventListener('click', function(e) {
         if (e.target === modal) {
             closeModal();
         }
     });
     
-    // Close modal with Escape key
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && modal.style.display === 'block') {
-            closeModal();
+        if (isModalOpen) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+            trapFocus(e);
         }
     });
+    
+    modal.addEventListener('wheel', function(e) {
+        if (isModalOpen) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+    
+    if ('ontouchstart' in window) {
+        setupTouchGestures();
+    }
 }
 
-// Open modal with pet information and full image
-function openModal(pet) {
-    if (!modal) return;
+function setupTouchGestures() {
+    let startY = 0;
+    let currentY = 0;
+    let isDragging = false;
     
-    // Set pet name
+    modalContent?.addEventListener('touchstart', function(e) {
+        if (isMobile && e.touches.length === 1) {
+            startY = e.touches[0].clientY;
+            isDragging = true;
+        }
+    }, { passive: true });
+    
+    modalContent?.addEventListener('touchmove', function(e) {
+        if (isDragging && isMobile) {
+            currentY = e.touches[0].clientY;
+            const deltaY = currentY - startY;
+            
+            if (deltaY > 0) {
+                const opacity = Math.max(0.5, 1 - deltaY / 300);
+                modal.style.opacity = opacity;
+                
+                const scale = Math.max(0.9, 1 - deltaY / 1000);
+                modalContent.style.transform = `translateY(${deltaY / 3}px) scale(${scale})`;
+            }
+        }
+    }, { passive: true });
+    
+    modalContent?.addEventListener('touchend', function(e) {
+        if (isDragging && isMobile) {
+            const deltaY = currentY - startY;
+            
+            if (deltaY > 100) {
+                closeModal();
+            } else {
+                modal.style.opacity = '';
+                modalContent.style.transform = '';
+            }
+            
+            isDragging = false;
+        }
+    }, { passive: true });
+}
+
+function trapFocus(e) {
+    const focusableElements = modal.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+    
+    if (e.key === 'Tab') {
+        if (e.shiftKey) {
+            if (document.activeElement === firstElement) {
+                e.preventDefault();
+                lastElement.focus();
+            }
+        } else {
+            if (document.activeElement === lastElement) {
+                e.preventDefault();
+                firstElement.focus();
+            }
+        }
+    }
+}
+
+function openModal(pet) {
+    if (!modal || isModalOpen) return;
+    
+    console.log(`🖼️ Opening modal for pet: ${pet.name} (${isMobile ? 'Mobile' : 'Desktop'} mode)`);
+    
     modalPetName.textContent = pet.name;
     
-    // Set pet image with better error handling
     const placeholderUrl = 'https://via.placeholder.com/600x400/4ECDC4/FFFFFF?text=🐾+Photo+Not+Available';
     modalImage.src = pet.imageUrl || placeholderUrl;
     modalImage.alt = `Full size photo of ${pet.name}`;
     
-    // Handle modal image loading
     modalImage.onload = function() {
         console.log(`✅ Modal image loaded for ${pet.name}`);
+        this.style.opacity = '1';
     };
     
     modalImage.onerror = function() {
@@ -194,7 +305,6 @@ function openModal(pet) {
         this.alt = 'Photo not available';
     };
     
-    // Set detailed pet information
     modalPetInfo.innerHTML = `
         <h4>About ${escapeHtml(pet.name)}</h4>
         
@@ -223,31 +333,54 @@ function openModal(pet) {
         </div>
     `;
     
-    // Show modal with animation
     modal.style.display = 'block';
-    document.body.style.overflow = 'hidden'; // Prevent background scrolling
-    
-    // Focus management for accessibility
     modal.setAttribute('aria-hidden', 'false');
-    modalClose.focus();
     
-    console.log(`🖼️ Opened modal with full image for pet: ${pet.name}`);
+    document.body.style.overflow = 'hidden';
+    if (isMobile) {
+        document.body.style.position = 'fixed';
+        document.body.style.width = '100%';
+    }
+    
+    requestAnimationFrame(() => {
+        modal.classList.add('show');
+    });
+    
+    isModalOpen = true;
+    const firstCloseButton = modal.querySelector('.modal-close');
+    if (firstCloseButton) {
+        firstCloseButton.focus();
+    }
 }
 
-// Close modal
 function closeModal() {
-    if (!modal) return;
+    if (!modal || !isModalOpen) return;
     
-    modal.style.display = 'none';
-    document.body.style.overflow = 'auto'; // Restore scrolling
-    modal.setAttribute('aria-hidden', 'true');
+    console.log('❌ Closing modal');
     
-    console.log('❌ Modal closed');
+    modal.classList.remove('show');
+    
+    setTimeout(() => {
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        
+        document.body.style.overflow = '';
+        if (isMobile) {
+            document.body.style.position = '';
+            document.body.style.width = '';
+        }
+        
+        modal.style.opacity = '';
+        if (modalContent) {
+            modalContent.style.transform = '';
+        }
+        
+        isModalOpen = false;
+    }, 300);
 }
 
 window.closeModal = closeModal;
 
-// Format date for display
 function formatDate(dateString) {
     if (!dateString) return 'Unknown';
     
@@ -263,10 +396,15 @@ function formatDate(dateString) {
     }
 }
 
-// Setup filters
 function setupFilters() {
     if (searchInput) {
-        searchInput.addEventListener('input', debounce(filterPets, 300));
+        searchInput.addEventListener('input', debounce(filterPets, isMobile ? 500 : 300));
+        
+        if (isMobile) {
+            searchInput.addEventListener('focus', function() {
+                this.select();
+            });
+        }
     }
     
     if (breedFilter) {
@@ -274,7 +412,6 @@ function setupFilters() {
     }
 }
 
-// Filter pets based on search and breed
 function filterPets() {
     const searchTerm = searchInput?.value.toLowerCase() || '';
     const selectedBreed = breedFilter?.value || '';
@@ -313,7 +450,6 @@ function filterPets() {
     displayPets(filteredPets);
 }
 
-// Setup pet form
 function setupForm() {
     petForm.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -322,7 +458,6 @@ function setupForm() {
         const formData = new FormData(this);
         const submitBtn = this.querySelector('.submit-btn');
         
-        // Validate required fields
         const name = formData.get('name');
         const age = formData.get('age');
         const breed = formData.get('breed');
@@ -338,15 +473,13 @@ function setupForm() {
             return;
         }
         
-        // Check file size (5MB limit)
         if (image.size > 5 * 1024 * 1024) {
             showError('Image file must be smaller than 5MB!');
             return;
         }
         
-        // Disable submit button
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Adding Pet to Adoption List...';
+        submitBtn.textContent = 'Adding Pet...';
         
         try {
             console.log('📤 Sending pet data to server...');
@@ -361,9 +494,12 @@ function setupForm() {
                 console.log('✅ Pet added successfully:', result.pet.name);
                 showSuccess(`${result.pet.name} has been added to the adoption list! 🎉`);
                 this.reset();
-                document.getElementById('image-preview').innerHTML = '';
                 
-                // Redirect to main page after 3 seconds
+                const previewDiv = document.getElementById('image-preview');
+                if (previewDiv) {
+                    previewDiv.innerHTML = '';
+                }
+                
                 setTimeout(() => {
                     window.location.href = 'index.html';
                 }, 3000);
@@ -375,14 +511,12 @@ function setupForm() {
             console.error('❌ Error adding pet:', error);
             showError(`Failed to add pet: ${error.message}`);
         } finally {
-            // Re-enable submit button
             submitBtn.disabled = false;
             submitBtn.textContent = 'Add Pet to Adoption List';
         }
     });
 }
 
-// Setup image preview with full display
 function setupImagePreview() {
     const imageInput = document.getElementById('image');
     const previewDiv = document.getElementById('image-preview');
@@ -392,14 +526,12 @@ function setupImagePreview() {
             const file = e.target.files[0];
             
             if (file) {
-                // Validate file type
                 if (!file.type.startsWith('image/')) {
                     showError('Please select an image file!');
                     this.value = '';
                     return;
                 }
                 
-                // Validate file size
                 if (file.size > 5 * 1024 * 1024) {
                     showError('Image file must be smaller than 5MB!');
                     this.value = '';
@@ -427,7 +559,6 @@ function setupImagePreview() {
     }
 }
 
-// Utility functions
 function showLoading(show) {
     if (loadingElement) {
         loadingElement.style.display = show ? 'block' : 'none';
@@ -445,29 +576,29 @@ function showError(message) {
 function showMessage(message, type) {
     console.log(`💬 ${type.toUpperCase()}: ${message}`);
     
-    // Create message element
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${type}`;
     messageDiv.textContent = message;
+    messageDiv.setAttribute('role', 'alert');
+    messageDiv.setAttribute('aria-live', 'polite');
     
     document.body.appendChild(messageDiv);
     
-    // Remove after 5 seconds
     setTimeout(() => {
         if (messageDiv.parentNode) {
             messageDiv.remove();
         }
     }, 5000);
     
-    // Allow manual dismiss by clicking
     messageDiv.addEventListener('click', () => {
         if (messageDiv.parentNode) {
             messageDiv.remove();
         }
     });
+    
+    messageDiv.focus();
 }
 
-// Escape HTML to prevent XSS
 function escapeHtml(unsafe) {
     if (!unsafe) return '';
     return unsafe
@@ -478,7 +609,6 @@ function escapeHtml(unsafe) {
         .replace(/'/g, "&#039;");
 }
 
-// Debounce function for search
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -491,3 +621,24 @@ function debounce(func, wait) {
     };
 }
 
+window.addEventListener('orientationchange', function() {
+    setTimeout(() => {
+        updateMobileStatus();
+        if (isModalOpen && isMobile) {
+            modal.style.height = '100vh';
+        }
+    }, 100);
+});
+
+document.addEventListener('touchend', function(e) {
+    const now = new Date().getTime();
+    const timeSince = now - (window.lastTouchEnd || 0);
+    
+    if (timeSince < 300 && timeSince > 0) {
+        e.preventDefault();
+    }
+    
+    window.lastTouchEnd = now;
+}, false);
+
+console.log('✅ PetPost with full responsive and mobile support initialized successfully!');
