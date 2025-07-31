@@ -37,9 +37,28 @@
         </div>
     </main>
     
+    <div id="image-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-pet-name">Pet Name</h3>
+                <span class="modal-close" title="Close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="modal-image-container">
+                    <img id="modal-image" src="" alt="Pet Image" loading="lazy">
+                </div>
+                <div id="modal-pet-info" class="modal-pet-details">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+    
     <footer>
         <div class="container">
-            <p>&copy; 2025 PetPost</p>
+            <p>&copy; 2025 PetPost - Helping pets find loving homes</p>
         </div>
     </footer>
     

@@ -1,165 +1,340 @@
 // Global variables
-let allCharacters = [];
+let allPets = [];
 
 // DOM elements
-const charactersGrid = document.getElementById('characters-grid');
+const petsGrid = document.getElementById('pets-grid');
 const loadingElement = document.getElementById('loading');
-const characterForm = document.getElementById('character-form');
+const petForm = document.getElementById('pet-form');
 const searchInput = document.getElementById('search-input');
-const universeFilter = document.getElementById('universe-filter');
-const affiliationFilter = document.getElementById('affiliation-filter');
+const breedFilter = document.getElementById('breed-filter');
+
+// Modal elements
+const modal = document.getElementById('image-modal');
+const modalImage = document.getElementById('modal-image');
+const modalPetName = document.getElementById('modal-pet-name');
+const modalPetInfo = document.getElementById('modal-pet-info');
+const modalClose = document.querySelector('.modal-close');
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🦸‍♂️ MarvelBase frontend starting...');
+    console.log('🐾 PetPost frontend with full image display starting...');
     
-    // Load characters on main page
-    if (charactersGrid) {
-        loadCharacters();
+    // Load pets on main page
+    if (petsGrid) {
+        loadPets();
         setupFilters();
+        setupModal();
     }
     
-    // Setup form on add character page
-    if (characterForm) {
+    // Setup form on add pet page
+    if (petForm) {
         setupForm();
         setupImagePreview();
     }
 });
 
-// Load and display characters
-async function loadCharacters() {
-    console.log('📖 Loading characters from server...');
+// Load and display pets
+async function loadPets() {
+    console.log('📖 Loading pets from server...');
     try {
         showLoading(true);
-        const response = await fetch('/api/characters');
+        const response = await fetch('/api/pets');
         
         if (!response.ok) {
             throw new Error(`Server error: ${response.status}`);
         }
         
-        const characters = await response.json();
-        console.log(`✅ Loaded ${characters.length} characters`);
+        const pets = await response.json();
+        console.log(`✅ Loaded ${pets.length} pets`);
         
-        allCharacters = characters;
-        displayCharacters(characters);
+        allPets = pets;
+        displayPets(pets);
         showLoading(false);
         
     } catch (error) {
-        console.error('❌ Error loading characters:', error);
-        showError('Failed to load characters. Is the server running?');
+        console.error('❌ Error loading pets:', error);
+        showError('Failed to load pets. Please check if the server is running.');
         showLoading(false);
     }
 }
 
-// Display characters in grid
-function displayCharacters(characters) {
-    if (!charactersGrid) return;
+// Display pets in grid with full images
+function displayPets(pets) {
+    if (!petsGrid) return;
     
-    if (characters.length === 0) {
-        charactersGrid.innerHTML = `
-            <div class="no-characters">
-                <h3>🦸‍♂️ No characters yet!</h3>
-                <p>Be the first to add a Marvel character to the database!</p>
-                <a href="add-character.html" class="nav-btn">Add Your First Character</a>
+    if (pets.length === 0) {
+        petsGrid.innerHTML = `
+            <div class="no-pets">
+                <h3>🐕 No pets available for adoption yet!</h3>
+                <p>Be the first to add a lovable pet looking for a home.</p>
+                <a href="add-pet.html" class="nav-btn">Add First Pet</a>
             </div>
         `;
         return;
     }
     
-    charactersGrid.innerHTML = characters.map(character => `
-        <div class="character-card" data-id="${character.id}">
-            <img src="${character.imageUrl || 'https://via.placeholder.com/300x250?text=No+Image'}" 
-                 alt="${character.name}" class="character-image"
-                 onerror="this.src='https://via.placeholder.com/300x250?text=No+Image'">
+    petsGrid.innerHTML = pets.map(pet => `
+        <div class="pet-card" data-id="${pet.id}">
+            <div class="pet-image-container">
+                <img src="${pet.imageUrl || 'https://via.placeholder.com/400x300?text=No+Photo+Available'}" 
+                     alt="${escapeHtml(pet.name)}" 
+                     class="pet-image"
+                     data-pet-id="${pet.id}"
+                     loading="lazy"
+                     onerror="handleImageError(this)"
+                     onload="handleImageLoad(this)"
+                     title="Click to view ${escapeHtml(pet.name)}'s details">
+            </div>
             
-            <div class="character-info">
-                <h3 class="character-name">${escapeHtml(character.name)}</h3>
-                ${character.realName ? `<p class="character-real-name">${escapeHtml(character.realName)}</p>` : ''}
+            <div class="pet-info">
+                <h3 class="pet-name">${escapeHtml(pet.name)}</h3>
+                <div class="pet-breed">${escapeHtml(pet.breed)}</div>
                 
-                <p class="character-bio">${escapeHtml(character.bio)}</p>
-                
-                <div class="character-tags">
-                    ${character.affiliation ? `<span class="tag">${escapeHtml(character.affiliation)}</span>` : ''}
-                    ${character.universe ? `<span class="tag">${escapeHtml(character.universe)}</span>` : ''}
-                    ${character.status ? `<span class="tag status-${character.status.toLowerCase()}">${escapeHtml(character.status)}</span>` : ''}
+                <div class="pet-tags">
+                    <span class="tag age">${pet.age} ${pet.age === 1 ? 'year' : 'years'} old</span>
+                    ${pet.size ? `<span class="tag size">${escapeHtml(pet.size)}</span>` : ''}
+                    ${pet.gender ? `<span class="tag gender">${escapeHtml(pet.gender)}</span>` : ''}
                 </div>
                 
-                ${character.powers ? `
-                    <div class="character-detail">
-                        <strong>Powers:</strong> ${escapeHtml(character.powers)}
-                    </div>
-                ` : ''}
-                
-                ${character.firstAppearance ? `
-                    <div class="character-detail">
-                        <strong>First Appearance:</strong> ${escapeHtml(character.firstAppearance)}
-                    </div>
+                ${pet.description ? `
+                    <p class="pet-description">${escapeHtml(pet.description)}</p>
                 ` : ''}
             </div>
         </div>
     `).join('');
     
-    console.log(`📺 Displayed ${characters.length} characters`);
+    // Add click handlers to images
+    setupImageClickHandlers();
+    
+    console.log(`📺 Displayed ${pets.length} pets with full image support`);
+}
+
+// Handle image loading success
+function handleImageLoad(img) {
+    console.log(`✅ Image loaded successfully for pet: ${img.alt}`);
+    img.style.opacity = '1';
+}
+
+// Handle image loading errors
+function handleImageError(img) {
+    console.log(`❌ Image failed to load for pet: ${img.alt}`);
+    img.src = 'https://via.placeholder.com/400x300/4ECDC4/FFFFFF?text=🐾+Photo+Not+Available';
+    img.alt = 'Photo not available';
+    img.style.opacity = '0.7';
+}
+
+// Setup image click handlers for modal
+function setupImageClickHandlers() {
+    const petImages = document.querySelectorAll('.pet-image');
+    petImages.forEach(img => {
+        img.addEventListener('click', function(e) {
+            e.preventDefault();
+            const petId = this.getAttribute('data-pet-id');
+            const pet = allPets.find(p => p.id === petId);
+            if (pet) {
+                openModal(pet);
+            }
+        });
+        
+        // Add keyboard support
+        img.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.click();
+            }
+        });
+        
+        // Make images focusable
+        img.setAttribute('tabindex', '0');
+    });
+}
+
+// Setup modal functionality
+function setupModal() {
+    if (!modal) return;
+    
+    // Close modal when clicking the X button
+    modalClose.addEventListener('click', closeModal);
+    
+    // Close modal when clicking outside the content
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+    
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal.style.display === 'block') {
+            closeModal();
+        }
+    });
+}
+
+// Open modal with pet information and full image
+function openModal(pet) {
+    if (!modal) return;
+    
+    // Set pet name
+    modalPetName.textContent = pet.name;
+    
+    // Set pet image with better error handling
+    const placeholderUrl = 'https://via.placeholder.com/600x400/4ECDC4/FFFFFF?text=🐾+Photo+Not+Available';
+    modalImage.src = pet.imageUrl || placeholderUrl;
+    modalImage.alt = `Full size photo of ${pet.name}`;
+    
+    // Handle modal image loading
+    modalImage.onload = function() {
+        console.log(`✅ Modal image loaded for ${pet.name}`);
+    };
+    
+    modalImage.onerror = function() {
+        console.log(`❌ Modal image failed for ${pet.name}, using placeholder`);
+        this.src = placeholderUrl;
+        this.alt = 'Photo not available';
+    };
+    
+    // Set detailed pet information
+    modalPetInfo.innerHTML = `
+        <h4>About ${escapeHtml(pet.name)}</h4>
+        
+        <p><strong>🐾 Breed:</strong> ${escapeHtml(pet.breed)}</p>
+        <p><strong>🎂 Age:</strong> ${pet.age} ${pet.age === 1 ? 'year' : 'years'} old</p>
+        ${pet.size ? `<p><strong>📏 Size:</strong> ${escapeHtml(pet.size)}</p>` : ''}
+        ${pet.gender ? `<p><strong>⚧ Gender:</strong> ${escapeHtml(pet.gender)}</p>` : ''}
+        ${pet.description ? `<p><strong>📝 Description:</strong> ${escapeHtml(pet.description)}</p>` : ''}
+        
+        <p><strong>📋 Status:</strong> <span style="color: var(--primary-color); font-weight: bold;">Available for adoption</span></p>
+        <p><strong>📅 Added:</strong> ${formatDate(pet.createdAt)}</p>
+        
+        <div class="pet-tags">
+            <span class="tag age">${pet.age} ${pet.age === 1 ? 'year' : 'years'} old</span>
+            ${pet.size ? `<span class="tag size">${escapeHtml(pet.size)}</span>` : ''}
+            ${pet.gender ? `<span class="tag gender">${escapeHtml(pet.gender)}</span>` : ''}
+        </div>
+        
+        <div style="margin-top: 2rem; padding: 1rem; background: var(--light-bg); border-radius: 8px; text-align: center;">
+            <p style="margin: 0; color: var(--primary-color); font-weight: bold;">
+                💖 Ready to adopt ${escapeHtml(pet.name)}?
+            </p>
+            <p style="margin: 0.5rem 0 0; font-size: 0.9rem; color: var(--text-light);">
+                Contact our adoption team for more information!
+            </p>
+        </div>
+    `;
+    
+    // Show modal with animation
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    
+    // Focus management for accessibility
+    modal.setAttribute('aria-hidden', 'false');
+    modalClose.focus();
+    
+    console.log(`🖼️ Opened modal with full image for pet: ${pet.name}`);
+}
+
+// Close modal
+function closeModal() {
+    if (!modal) return;
+    
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto'; // Restore scrolling
+    modal.setAttribute('aria-hidden', 'true');
+    
+    console.log('❌ Modal closed');
+}
+
+window.closeModal = closeModal;
+
+// Format date for display
+function formatDate(dateString) {
+    if (!dateString) return 'Unknown';
+    
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    } catch (error) {
+        return 'Unknown';
+    }
 }
 
 // Setup filters
 function setupFilters() {
     if (searchInput) {
-        searchInput.addEventListener('input', debounce(filterCharacters, 300));
+        searchInput.addEventListener('input', debounce(filterPets, 300));
     }
     
-    if (universeFilter) {
-        universeFilter.addEventListener('change', filterCharacters);
-    }
-    
-    if (affiliationFilter) {
-        affiliationFilter.addEventListener('change', filterCharacters);
+    if (breedFilter) {
+        breedFilter.addEventListener('change', filterPets);
     }
 }
 
-// Filter characters based on search and filters
-function filterCharacters() {
+// Filter pets based on search and breed
+function filterPets() {
     const searchTerm = searchInput?.value.toLowerCase() || '';
-    const selectedUniverse = universeFilter?.value || '';
-    const selectedAffiliation = affiliationFilter?.value || '';
+    const selectedBreed = breedFilter?.value || '';
     
-    const filteredCharacters = allCharacters.filter(character => {
-        const matchesSearch = character.name.toLowerCase().includes(searchTerm) ||
-                            (character.realName && character.realName.toLowerCase().includes(searchTerm)) ||
-                            character.bio.toLowerCase().includes(searchTerm) ||
-                            (character.powers && character.powers.toLowerCase().includes(searchTerm));
+    const filteredPets = allPets.filter(pet => {
+        const matchesSearch = pet.name.toLowerCase().includes(searchTerm) ||
+                            pet.breed.toLowerCase().includes(searchTerm) ||
+                            (pet.description && pet.description.toLowerCase().includes(searchTerm));
         
-        const matchesUniverse = !selectedUniverse || character.universe === selectedUniverse;
-        const matchesAffiliation = !selectedAffiliation || character.affiliation === selectedAffiliation;
+        let matchesBreed = true;
+        if (selectedBreed) {
+            if (selectedBreed === 'Dog') {
+                matchesBreed = pet.breed.toLowerCase().includes('dog') || 
+                              pet.breed.toLowerCase().includes('retriever') ||
+                              pet.breed.toLowerCase().includes('terrier') ||
+                              pet.breed.toLowerCase().includes('shepherd') ||
+                              pet.breed.toLowerCase().includes('poodle') ||
+                              pet.breed.toLowerCase().includes('bulldog') ||
+                              pet.breed.toLowerCase().includes('spaniel') ||
+                              pet.breed.toLowerCase().includes('beagle');
+            } else if (selectedBreed === 'Cat') {
+                matchesBreed = pet.breed.toLowerCase().includes('cat') || 
+                              pet.breed.toLowerCase().includes('persian') ||
+                              pet.breed.toLowerCase().includes('siamese') ||
+                              pet.breed.toLowerCase().includes('tabby') ||
+                              pet.breed.toLowerCase().includes('maine') ||
+                              pet.breed.toLowerCase().includes('british') ||
+                              pet.breed.toLowerCase().includes('ragdoll');
+            }
+        }
         
-        return matchesSearch && matchesUniverse && matchesAffiliation;
+        return matchesSearch && matchesBreed;
     });
     
-    console.log(`🔍 Filtered to ${filteredCharacters.length} characters`);
-    displayCharacters(filteredCharacters);
+    console.log(`🔍 Filtered to ${filteredPets.length} pets`);
+    displayPets(filteredPets);
 }
 
-// Setup character form
+// Setup pet form
 function setupForm() {
-    characterForm.addEventListener('submit', async function(e) {
+    petForm.addEventListener('submit', async function(e) {
         e.preventDefault();
-        console.log('📝 Submitting character form...');
+        console.log('📝 Submitting pet form...');
         
         const formData = new FormData(this);
         const submitBtn = this.querySelector('.submit-btn');
         
         // Validate required fields
         const name = formData.get('name');
-        const bio = formData.get('bio');
+        const age = formData.get('age');
+        const breed = formData.get('breed');
         const image = formData.get('image');
         
-        if (!name || !bio) {
-            showError('Character name and bio are required!');
+        if (!name || !age || !breed) {
+            showError('Pet name, age, and breed are required!');
             return;
         }
         
         if (!image || image.size === 0) {
-            showError('Please upload a character image!');
+            showError('Please upload a photo of the pet!');
             return;
         }
         
@@ -171,11 +346,11 @@ function setupForm() {
         
         // Disable submit button
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Adding Character to Database...';
+        submitBtn.textContent = 'Adding Pet to Adoption List...';
         
         try {
-            console.log('📤 Sending character data to server...');
-            const response = await fetch('/api/characters', {
+            console.log('📤 Sending pet data to server...');
+            const response = await fetch('/api/pets', {
                 method: 'POST',
                 body: formData
             });
@@ -183,31 +358,31 @@ function setupForm() {
             const result = await response.json();
             
             if (response.ok && result.success) {
-                console.log('✅ Character added successfully:', result.character.name);
-                showSuccess(`${result.character.name} added successfully!`);
+                console.log('✅ Pet added successfully:', result.pet.name);
+                showSuccess(`${result.pet.name} has been added to the adoption list! 🎉`);
                 this.reset();
                 document.getElementById('image-preview').innerHTML = '';
                 
-                // Redirect to main page after 2 seconds
+                // Redirect to main page after 3 seconds
                 setTimeout(() => {
                     window.location.href = 'index.html';
-                }, 2000);
+                }, 3000);
             } else {
-                throw new Error(result.error || 'Failed to add character');
+                throw new Error(result.error || 'Failed to add pet');
             }
             
         } catch (error) {
-            console.error('❌ Error adding character:', error);
-            showError(`Failed to add character: ${error.message}`);
+            console.error('❌ Error adding pet:', error);
+            showError(`Failed to add pet: ${error.message}`);
         } finally {
             // Re-enable submit button
             submitBtn.disabled = false;
-            submitBtn.textContent = 'Add Character to Database';
+            submitBtn.textContent = 'Add Pet to Adoption List';
         }
     });
 }
 
-// Setup image preview
+// Setup image preview with full display
 function setupImagePreview() {
     const imageInput = document.getElementById('image');
     const previewDiv = document.getElementById('image-preview');
@@ -238,7 +413,8 @@ function setupImagePreview() {
                             <img src="${e.target.result}" alt="Preview" class="preview-image">
                             <p class="preview-info">
                                 📸 ${file.name}<br>
-                                📊 ${(file.size/1024/1024).toFixed(2)}MB
+                                📊 ${(file.size/1024/1024).toFixed(2)}MB<br>
+                                ✅ Image looks great!
                             </p>
                         </div>
                     `;
@@ -271,24 +447,8 @@ function showMessage(message, type) {
     
     // Create message element
     const messageDiv = document.createElement('div');
-    messageDiv.className = `message message-${type}`;
+    messageDiv.className = `message ${type}`;
     messageDiv.textContent = message;
-    
-    // Add styles
-    messageDiv.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 1rem 2rem;
-        border-radius: 8px;
-        color: white;
-        font-weight: bold;
-        z-index: 1000;
-        animation: slideIn 0.3s ease;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        max-width: 300px;
-        background: ${type === 'success' ? '#4CAF50' : '#f44336'};
-    `;
     
     document.body.appendChild(messageDiv);
     
@@ -331,102 +491,3 @@ function debounce(func, wait) {
     };
 }
 
-// Add CSS animations and styles
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    
-    .preview-container {
-        margin-top: 1rem;
-        text-align: center;
-        padding: 1rem;
-        background: rgba(255,255,255,0.05);
-        border-radius: 8px;
-    }
-    
-    .preview-image {
-        max-width: 200px;
-        max-height: 200px;
-        border-radius: 8px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-    }
-    
-    .preview-info {
-        margin-top: 0.5rem;
-        font-size: 0.85rem;
-        color: var(--text-gray);
-        line-height: 1.4;
-    }
-    
-    .no-characters {
-        grid-column: 1 / -1;
-        text-align: center;
-        padding: 4rem 2rem;
-        background: var(--card-bg);
-        border-radius: 15px;
-        border: 2px dashed #444;
-    }
-    
-    .no-characters h3 {
-        font-size: 1.5rem;
-        margin-bottom: 1rem;
-        color: var(--marvel-yellow);
-    }
-    
-    .character-detail {
-        margin: 0.5rem 0;
-        font-size: 0.85rem;
-        line-height: 1.4;
-    }
-    
-    .character-detail strong {
-        color: var(--marvel-yellow);
-    }
-    
-    .status-active { background: #4CAF50; }
-    .status-deceased { background: #f44336; }
-    .status-retired { background: #ff9800; }
-    .status-missing { background: #9c27b0; }
-    .status-unknown { background: #607d8b; }
-    
-    .message {
-        cursor: pointer;
-        transition: opacity 0.3s ease;
-    }
-    
-    .message:hover {
-        opacity: 0.9;
-    }
-    
-    /* Loading animation */
-    .loading {
-        text-align: center;
-        padding: 3rem;
-        font-size: 1.2rem;
-        color: var(--text-gray);
-        position: relative;
-    }
-    
-    .loading::after {
-        content: '';
-        width: 40px;
-        height: 40px;
-        border: 4px solid #444;
-        border-top: 4px solid var(--marvel-red);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin: 1rem auto;
-        display: block;
-    }
-    
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-`;
-document.head.appendChild(style);
-
-console.log('✅ MarvelBase frontend initialized successfully!');
