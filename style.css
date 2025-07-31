@@ -121,9 +121,10 @@ main {
 /* Pet Grid */
 .pets-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
     gap: 2rem;
     margin-bottom: 2rem;
+    justify-content: center;
 }
 
 .pet-card {
@@ -135,7 +136,10 @@ main {
     border: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
+    width: 400px;           /* Card width matches image */
+    margin: 0 auto;
 }
+
 
 .pet-card:hover {
     transform: translateY(-10px);
@@ -143,7 +147,6 @@ main {
     border-color: var(--primary-color);
 }
 
-/* Enhanced Pet Image Container */
 .pet-image-container {
     width: 400px;
     height: 400px;
