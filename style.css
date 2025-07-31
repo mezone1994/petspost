@@ -679,4 +679,16 @@ footer {
     .modal-pet-details {
         padding: 1rem;
     }
+
+    
+}
+@media (max-width: 500px) {
+    .pet-card,
+    .pet-image-container,
+    .pet-image {
+        width: 95vw;
+        height: 95vw;
+        max-width: 100%;
+        max-height: 100vw;
+    }
 }
